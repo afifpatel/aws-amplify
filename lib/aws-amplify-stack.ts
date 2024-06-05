@@ -126,7 +126,7 @@ export class AwsAmplifyStack extends cdk.Stack {
         patterns: [props.gitBranch],
       },
       autoBranchDeletion: true,
-      
+      buildSpec,
     });
 
     /**
