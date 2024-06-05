@@ -9,6 +9,7 @@ import { IAWSAmplifyStackProps } from '../bin/types';
 import { NagSuppressions } from 'cdk-nag';
 import { DateTimeAttribute, UserPool, VerificationEmailStyle } from 'aws-cdk-lib/aws-cognito';
 import { CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { RedirectStatus } from '@aws-cdk/aws-amplify-alpha';
 
 export class AwsAmplifyStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: IAWSAmplifyStackProps) {
@@ -89,17 +90,12 @@ export class AwsAmplifyStack extends cdk.Stack {
               commands: [
                 'npm run build',
                 'echo "NEXTAUTH_SECRET=17cM2QJHbi9VuO4Vhqt6COMIaqXMV8Z5lU1NCZ325Qg=" >> .env.production',
-                `
-                if [ "$AWS_BRANCH" = "main" ]; then
-                  echo "NEXTAUTH_URL=https://main.\${AWS_APP_ID}.amplifyapp.com/" >> .env.production
-                elif [ "$AWS_BRANCH" = "dev" ]; then
-                  echo "NEXTAUTH_URL=https://dev.\${AWS_APP_ID}.amplifyapp.com/" >> .env.production
-                fi
-                `,
+                'echo "NEXTAUTH_URL=https://main.${AWS_APP_ID}.amplifyapp.com/" >> .env.production',
                 `echo "COGNITO_ID=${userPool.userPoolId}" >> .env.production`,
                 `echo "COGNITO_CLIENT_ID=${userPoolClient.userPoolClientId}" >> .env.production`
               ]
-            },
+            }
+          },
           artifacts: {
             baseDirectory: '.next',
             files: ['**/*'],
@@ -108,7 +104,6 @@ export class AwsAmplifyStack extends cdk.Stack {
             paths: ['node_modules/**/*'],
           },
         },
-      }
     });
 
     // amplify app from github repository
@@ -133,6 +128,15 @@ export class AwsAmplifyStack extends cdk.Stack {
      * // use this for static apps
      * amplifyApp.addCustomRule(amplify.CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT);
      */
+
+    amplifyApp.addCustomRule({
+      source: '/<*>',
+      target: '/index.html',
+      status: RedirectStatus.NOT_FOUND_REWRITE
+    });
+
+    amplifyApp.addEnvironment('COGNITO_ID', userPool.userPoolId)
+      .addEnvironment('COGNITO_CLIENT_ID', userPoolClient.userPoolClientId)
 
     // add main branch
     const main = amplifyApp.addBranch('Main', {
